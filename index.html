@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Timer</title>
+
+    <style>
+        .time {
+          text-align: center;
+          font-size: 100px;
+          margin-top: 25px;
+        }
+    </style>
+</head>
+<body>
+    <button onclick="startListening()">Start Listening</button>
+    <button onclick="stopListening()">Stop Listening</button>
+    <button onclick="startTimer()">Start</button>
+    <button onclick="stopTimer()">Stop</button>
+    <p id="timmerValue" class="time"></p>
+    <p id="timmerContent"></p>    
+    <script>
+        var secCounter = 0;
+        var minCounter = 0;
+        var hrCounter = 0;
+        var intervalCounter;
+        var speechIndex = 0;
+        var recognition;
+
+        function stopTimer(){
+            clearInterval(intervalCounter);
+        }
+
+        function startTimer(){
+            intervalCounter = setInterval(function(){            
+                secCounter++;
+
+                if(secCounter>59){
+                    secCounter = 0;
+                    minCounter++;
+                    if(minCounter>59){
+                        hrCounter++;                        
+                    }                    
+                }
+                document.getElementById("timmerValue").innerHTML = hrCounter +" h "+minCounter+" m "+secCounter+" s";                                  
+            },1000);
+        }
+
+        function startListening(){
+            if (!('webkitSpeechRecognition' in window)) {
+                console.log("speech not supported");
+            } else {
+                recognition = new webkitSpeechRecognition();
+                recognition.continuous = true;
+                recognition.start();
+                document.getElementById("timmerContent").innerHTML = "Timer Started: " + new Date();
+            }
+
+            recognition.onresult = function(event) {
+                var transcript =  event.results[event.resultIndex][0].transcript;
+                console.log(transcript);
+                if(transcript == "start"){
+                    startTimer();
+                }else if(transcript = "stop"){
+                    stopTimer();
+                }
+            }            
+        }
+
+        function stopListening(){
+            recognition.stop();
+            document.getElementById("timmerContent").innerHTML += "<br>Timer Stopped: " + new Date();
+        }
+    </script>
+</body>
+
+</html>
