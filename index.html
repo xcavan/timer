@@ -9,19 +9,71 @@
     <style>
         .time {
           text-align: center;
-          font-size: 100px;
-          margin-top: 25px;
+          font-size: 85px;
+          margin: 10px;       
+        }
+        .textRed{color: #f44336;}
+        .textBlue{color: #008CBA;}
+        .header {
+            width: 100%;       
+        }
+        .footer {
+            width: 96%;
+            position: fixed;
+            left: 5px;
+            bottom: 5px;
+            text-align: center;
+        }
+        .button {            
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            width: 48%;
+            box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+        }
+        .content{
+            height: 75vh;
+            overflow: auto;
+        }
+        .disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .buttonGreen {background-color: #4CAF50;} /* Green */
+        .buttonRed {background-color: #f44336;}   /* Red */           
+        .blink {animation: blinker 1s linear infinite;}
+        @keyframes blinker {
+            50% {
+                opacity: 0;
+                color: darkred
+            }
         }
     </style>
 </head>
-<body>
-    <button onclick="startListening()">Start Listening</button>
-    <button onclick="stopListening()">Stop Listening</button>
-    <button onclick="startTimer()">Start</button>
-    <button onclick="stopTimer()">Stop</button>
-    <p id="timmerValue" class="time"></p>
-    <p id="timmerContent"></p>    
+<body style="padding: 5px;">
+    <div class="header">
+        <button id="btnStartListen" onclick="startListening(this)" class="button buttonRed">Start Listening</button>
+        <button id="btnStopListen" onclick="stopListening(this)" class="button buttonGreen disabled" disabled=true>Stop Listening</button>    
+    </div>
+    <div class="content">
+        <p id="timmerValue" class="time textRed">
+            0 h 0 m <br>0 s <br> 0            
+        </p>        
+        <p id="timmerContent"></p>
+    </div>
+    <div class="footer">
+        <button id="btnStartTimer" onclick="startTimer()" class="button buttonRed">Start</button>
+        <button id="btnStopTimer" onclick="stopTimer()" class="button buttonGreen disabled" disabled=true>Stop</button>
+    </div>        
+    <p id="debugInfo"></p>
     <script>
+        var counter = 0;
         var secCounter = 0;
         var minCounter = 0;
         var hrCounter = 0;
@@ -30,29 +82,56 @@
         var recognition;
 
         function stopTimer(){
+            logs("Timer stopped");
+
+            handleBtn("btnStopTimer", true);
+            handleBtn("btnStartTimer", false);
+
+            var timerValue = document.getElementById("timmerValue");
+            timerValue.classList.add("textRed");
+            timerValue.classList.remove("textBlue");
+            //timerValue.classList.toggle("blink");
+        
             clearInterval(intervalCounter);
         }
 
         function startTimer(){
-            intervalCounter = setInterval(function(){            
-                secCounter++;
+            logs("Timer started");
 
-                if(secCounter>59){
-                    secCounter = 0;
-                    minCounter++;
-                    if(minCounter>59){
-                        hrCounter++;                        
-                    }                    
-                }
-                document.getElementById("timmerValue").innerHTML = hrCounter +" h "+minCounter+" m "+secCounter+" s";                                  
-            },1000);
+            handleBtn("btnStopTimer", false);
+            handleBtn("btnStartTimer", true);
+            
+            var timerValue = document.getElementById("timmerValue");
+            timerValue.classList.remove("textRed");
+            timerValue.classList.add("textBlue");
+            //timerValue.classList.toggle("blink");
+
+            intervalCounter = setInterval(function(){ 
+                counter++;
+                if(counter>9){
+                    counter = 0;
+                    secCounter++;
+                    if(secCounter>59){
+                        secCounter = 0;
+                        minCounter++;
+                        if(minCounter>59){
+                            hrCounter++;                        
+                        }                    
+                    }
+                }                                
+                document.getElementById("timmerValue").innerHTML = hrCounter +" h "+
+                    minCounter+" m <br>"+secCounter+" s <br>"+counter;                               
+            },100);
         }
 
-        function startListening(){
+        function startListening(){            
             if (!('webkitSpeechRecognition' in window)) {
-                console.log("speech not supported");
+                logs("speech not supported");
             } else {
-                recognition = new webkitSpeechRecognition();
+                handleBtn("btnStopListen", false);
+                handleBtn("btnStartListen", true);                
+
+                recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition || window.mozSpeechRecognition || window.msSpeechRecognition)();
                 recognition.continuous = true;
                 recognition.start();
                 document.getElementById("timmerContent").innerHTML = "Timer Started: " + new Date();
@@ -60,18 +139,35 @@
 
             recognition.onresult = function(event) {
                 var transcript =  event.results[event.resultIndex][0].transcript;
-                console.log(transcript);
-                if(transcript == "start"){
+                logs(transcript);
+                if(transcript.includes("start")){
                     startTimer();
-                }else if(transcript = "stop"){
+                }
+                if(transcript.includes("stop")){
                     stopTimer();
                 }
             }            
         }
 
         function stopListening(){
+            handleBtn("btnStopListen", true);
+            handleBtn("btnStartListen", false);
             recognition.stop();
             document.getElementById("timmerContent").innerHTML += "<br>Timer Stopped: " + new Date();
+        }
+
+        function logs(logText){
+            var urlParam = new  URLSearchParams(window.location.search);
+            if(urlParam.get("debug")){
+                document.getElementById("timmerContent").innerHTML += "<br>" + logText;
+            }
+            console.log(logText);
+        }
+
+        function handleBtn(id,disabled){
+            var btn = document.getElementById(id);
+            btn.classList.toggle("disabled");
+            btn.disabled = disabled;
         }
     </script>
 </body>
